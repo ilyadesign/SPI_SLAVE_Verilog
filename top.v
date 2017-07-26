@@ -52,16 +52,3 @@ module top(
     	rxd_data <= rxd_data_r;
     end
 endmodule
-
-
-//module spi_slave(
-//	input    wire    sys_clk,
-//	input    wire    rst_n,
-//	input    wire    CS_N,
-//	input    wire    SCK,
-//	input    wire    MOSI,
-//	input    wire    [7:0] txd_data,
-//	output   reg     MISO,
-//	output   reg     [7:0] rxd_data
-////	output   wire    rxd_flag
-//    );
