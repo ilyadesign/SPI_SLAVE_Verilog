@@ -80,7 +80,7 @@ module spi_slave(
     // -- TODO: detect the posedge of rxd_flag
     assign rxd_flag = (rxd_flag_r0 &&
                        !rxd_flag_r1) ? 1'b1: 1'b0;
-    always @ (posedge sys_clk or rst_n) begin
+    always @ (posedge sys_clk or negedge rst_n) begin
     	if (!rst_n) begin
     	    rxd_flag_r0 <= 1'b0;
     	    rxd_flag_r1 <= 1'b0;
@@ -122,14 +122,13 @@ module spi_slave(
         else if (sck_pos_detect && !CS_N &&
                         rxd_data_cnt == 4'd7) begin
             rxd_data <= {rxd_data[6:0], MOSI};
-            rxd_data_cnt <= 4'd0;
-        end
-        else if (CS_N_pos_detect) begin
-        	rxd_flag_r <= 1'b1;
         end
         else if (CS_N_neg_detect) begin
-            rxd_data_cnt <= 4'd0;
-            rxd_flag_r <= 1'b0;
+        	rxd_flag_r <= 1'b0;
+        end
+        else if (CS_N_pos_detect) begin
+        	rxd_data_cnt <= 4'd0;
+        	rxd_flag_r <= 1'b1;
         end
         else begin
         	rxd_data <= rxd_data;
@@ -138,33 +137,30 @@ module spi_slave(
         end
     end
     
-    // -- TODO: synchronize data
-    always @ (posedge sys_clk or negedge rst_n) begin
-    	if (!rst_n) begin
-    		txd_data_buf <= 8'd0;
-    	end
-    	else if (CS_N_neg_detect) begin
-    		txd_data_buf <= txd_data;
-    	end
-    end
-    
-    // -- TODO: send data
-    always @ (posedge sys_clk or negedge rst_n) begin
-    	if (!rst_n) begin
-    		txd_data_cnt <= 4'd0;
-    	end
-    	else if (sck_neg_detect && !CS_N &&
-    	                txd_data_cnt != 4'd7) begin
-    	    MISO <= txd_data_buf[7];
-    		txd_data_buf <= txd_data_buf << 1;
-    		txd_data_cnt <= txd_data_cnt + 1;
-    	end
-        else if (sck_neg_detect && !CS_N &&
-    	    	        txd_data_cnt == 4'd7) begin
-    	    MISO <= txd_data_buf[7];
-    	    txd_data_cnt <= 4'd0;
-    	end
-    end
-           
-    
+	// -- TODO: send data
+	always @ (posedge sys_clk or negedge rst_n) begin
+		if (!rst_n) begin
+			txd_data_cnt <= 4'd0;
+			txd_data_buf <= 8'd0;
+		end
+		else if (CS_N_neg_detect) begin
+			txd_data_buf <= txd_data;
+		end
+		else if (sck_neg_detect && !CS_N &&
+					txd_data_cnt != 4'd7) begin
+			MISO <= txd_data_buf[7];
+			txd_data_buf <= {txd_data_buf[6:0], 1'b0};
+			txd_data_cnt <= txd_data_cnt + 1;
+		end
+		else if (sck_neg_detect && !CS_N &&
+					txd_data_cnt == 4'd7) begin
+			MISO <= txd_data_buf[7];
+			txd_data_cnt <= 4'd0;
+		end
+		else begin
+			txd_data_cnt <= txd_data_cnt;
+			txd_data_buf <= txd_data_buf;
+		end
+	end
+
 endmodule
